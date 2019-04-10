@@ -49,7 +49,7 @@ defmodule Docker.Exec do
   Inspect an exec by ID.
   """
   def inspect(id) do
-    "#{@base_exec_uri}/#{id}/inspect"
+    "#{@base_exec_uri}/#{id}/json"
     |> Docker.Client.get()
     |> decode_inspect_response
   end
