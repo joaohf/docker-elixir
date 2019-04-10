@@ -14,18 +14,21 @@ defmodule MiscTestDos do
   end
 
   test "get events and stream response" do
-    conf =  %{"AttachStdin" => false,
+    conf = %{
+      "AttachStdin" => false,
       "Env" => [],
       "Image" => "hello-world:latest",
       "Volumes" => %{},
-      "ExposedPorts" => %{},
+      "ExposedPorts" => %{}
     }
 
     stream = Docker.Misc.stream_events()
     parent = self()
-    spawn(fn -> 
-      Enum.map(stream, fn event -> send(parent, event) end) 
+
+    spawn(fn ->
+      Enum.map(stream, fn event -> send(parent, event) end)
     end)
+
     {:ok, %{"Id" => id}} = Docker.Containers.create(conf)
     assert_receive {:ok, _}
     assert_receive {:event, %{"Action" => "create"}}

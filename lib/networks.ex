@@ -14,7 +14,8 @@ defmodule Docker.Networks do
   end
 
   defp decode_list_response(%HTTPoison.Response{body: body, status_code: status_code}) do
-    Logger.debug fn -> "Decoding Docker API response: #{Kernel.inspect body}" end
+    Logger.debug(fn -> "Decoding Docker API response: #{Kernel.inspect(body)}" end)
+
     case Poison.decode(body) do
       {:ok, dict} ->
         case status_code do
@@ -22,7 +23,9 @@ defmodule Docker.Networks do
           500 -> {:error, "Server error"}
           code -> {:error, "Unknown code: #{code}"}
         end
-      {:error, message} -> {:error, message}
+
+      {:error, message} ->
+        {:error, message}
     end
   end
 
@@ -34,7 +37,7 @@ defmodule Docker.Networks do
 
   defp decode_create_response(%HTTPoison.Response{body: body, status_code: status_code}) do
     with 201 <- status_code,
-        {:ok, res} <- Poison.decode(body) do
+         {:ok, res} <- Poison.decode(body) do
       {:ok, res}
     else
       403 -> {:error, "Operation not supported for pre-defined networks"}
@@ -46,7 +49,7 @@ defmodule Docker.Networks do
 
   def remove(id) do
     "#{@base_uri}/#{id}"
-    |> Docker.Client.delete
+    |> Docker.Client.delete()
     |> decode_remove_response
   end
 
@@ -59,11 +62,10 @@ defmodule Docker.Networks do
     end
   end
 
-
   def connect(conf, id) do
-      "#{@base_uri}/#{id}/connect"
-      |> Docker.Client.post(conf)
-      |> decode_connect_disconnect_response
+    "#{@base_uri}/#{id}/connect"
+    |> Docker.Client.post(conf)
+    |> decode_connect_disconnect_response
   end
 
   def disconnect(conf, id) do
@@ -90,11 +92,13 @@ defmodule Docker.Networks do
   Given the name of a network, returns any matching IDs.
   """
   def find_ids(name) do
-    {:ok, networks} = Docker.Networks.list
+    {:ok, networks} = Docker.Networks.list()
+
     ids =
       networks
       |> Enum.filter(&(name == &1["Name"]))
-      |> Enum.map(&(&1["Id"]))
+      |> Enum.map(& &1["Id"])
+
     case length(ids) > 0 do
       true -> {:ok, ids}
       _ -> {:err, "No networks found"}

@@ -9,8 +9,8 @@ defmodule Docker.Misc do
   """
   def info do
     "/info"
-      |> Docker.Client.get
-      |> decode_system_response
+    |> Docker.Client.get()
+    |> decode_system_response
   end
 
   @doc """
@@ -18,22 +18,26 @@ defmodule Docker.Misc do
   """
   def version do
     "/version"
-      |> Docker.Client.get
-      |> decode_system_response
+    |> Docker.Client.get()
+    |> decode_system_response
   end
 
   defp decode_system_response(%HTTPoison.Response{body: body, status_code: status_code}) do
-    Logger.debug fn -> "Decoding Docker API response: #{inspect body}" end
+    Logger.debug(fn -> "Decoding Docker API response: #{inspect(body)}" end)
+
     case Poison.decode(body) do
       {:ok, dict} ->
         case status_code do
           200 -> {:ok, dict}
           500 -> {:error, "Server error"}
-            _ -> {:error, "Unknow error"}
+          _ -> {:error, "Unknow error"}
         end
+
       {:error, message} ->
         {:error, message}
-      _ -> {:error, "Unknow error"}
+
+      _ ->
+        {:error, "Unknow error"}
     end
   end
 
@@ -42,8 +46,8 @@ defmodule Docker.Misc do
   """
   def ping do
     "/_ping"
-      |> Docker.Client.get
-      |> decode_ping_response
+    |> Docker.Client.get()
+    |> decode_ping_response
   end
 
   defp decode_ping_response(%HTTPoison.Response{body: body, status_code: status_code}) do
@@ -57,13 +61,14 @@ defmodule Docker.Misc do
   Monitor Docker's events since given timestamp.
   """
   def events(since), do: Docker.Client.get("/events?since=#{since}")
-  
+
   @doc """
   Monitor Docker's events as stream. LEGACY.
   """
   def events_stream, do: Docker.Client.stream(:get, "/events")
+
   def events_stream(filter) do
-    json = filter |> Poison.encode!
+    json = filter |> Poison.encode!()
     Docker.Client.stream(:get, "/events?filters=#{json}")
   end
 
@@ -71,11 +76,13 @@ defmodule Docker.Misc do
   Return real-time events from server as a stream.
   """
   def stream_events do
-    stream = Stream.resource(
-      fn -> start_streaming_events("/events") end,
-      fn({id, status}) -> receive_events({id, status}) end,
-      fn id -> stop_streaming_events(id) end
-    )
+    stream =
+      Stream.resource(
+        fn -> start_streaming_events("/events") end,
+        fn {id, status} -> receive_events({id, status}) end,
+        fn id -> stop_streaming_events(id) end
+      )
+
     stream
   end
 
@@ -87,6 +94,7 @@ defmodule Docker.Misc do
   defp receive_events({id, :kill}) do
     {:halt, id}
   end
+
   defp receive_events({id, :keepalive}) do
     receive do
       %HTTPoison.AsyncStatus{id: ^id, code: code} ->
@@ -94,17 +102,21 @@ defmodule Docker.Misc do
           200 -> {[{:ok, "Started streaming events"}], {id, :keepalive}}
           400 -> {[{:error, "Bad parameter"}], {id, :kill}}
           500 -> {[{:error, "Server error"}], {id, :kill}}
-            _ -> {[{:error, "Unknow error"}], {id, :kill}}
+          _ -> {[{:error, "Unknow error"}], {id, :kill}}
         end
+
       %HTTPoison.AsyncHeaders{id: ^id, headers: _headers} ->
         {[], {id, :keepalive}}
+
       %HTTPoison.AsyncChunk{id: ^id, chunk: chunk} ->
         case Poison.decode(chunk) do
           {:ok, event} ->
             {[{:event, event}], {id, :keepalive}}
+
           _ ->
             {[], {id, :keepalive}}
         end
+
       %HTTPoison.AsyncEnd{id: ^id} ->
         {[{:end, "Finished streaming"}], {id, :kill}}
     end

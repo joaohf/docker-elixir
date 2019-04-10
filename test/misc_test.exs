@@ -6,7 +6,7 @@ defmodule MiscTest do
   @test_image_tag "latest"
 
   setup_all do
-    IO.puts "Pulling #{@test_image}:#{@test_image_tag} for testing..."
+    IO.puts("Pulling #{@test_image}:#{@test_image_tag} for testing...")
     Docker.Images.pull(@test_image, @test_image_tag)
     :ok
   end
@@ -14,12 +14,15 @@ defmodule MiscTest do
   # This is the test for the legacy Docker.Misc.events_stream/0 function
   test "events stream" do
     %HTTPoison.AsyncResponse{id: id} = Docker.Misc.events_stream()
-    conf = %{"AttachStdin" => false,
+
+    conf = %{
+      "AttachStdin" => false,
       "Env" => [],
       "Image" => "#{@test_image}:#{@test_image_tag}",
       "Volumes" => %{},
-      "ExposedPorts" => %{},
+      "ExposedPorts" => %{}
     }
+
     assert {:ok, container} = Docker.Containers.create(conf, "misc")
     assert_receive %HTTPoison.AsyncChunk{id: ^id, chunk: _}, :infinity
     Docker.Containers.remove(container["Id"])

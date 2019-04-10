@@ -20,7 +20,7 @@ defmodule ImagesTest do
 
   test "pull image and stream response" do
     stream = Docker.Images.stream_pull(@test_image, @test_image_tag)
-    Enum.map(stream, fn elem -> send(self(), elem)  end)
+    Enum.map(stream, fn elem -> send(self(), elem) end)
     assert_receive {:ok, _}
     assert_receive {:pulling, _}
     assert_receive {:end, _}
@@ -32,7 +32,7 @@ defmodule ImagesTest do
 
   test "auth and pull image and stream response" do
     stream = Docker.Images.stream_pull(@test_image, @test_image_tag, "username:password")
-    Enum.map(stream, fn elem -> send(self(), elem)  end)
+    Enum.map(stream, fn elem -> send(self(), elem) end)
     assert_receive {:ok, _}
     assert_receive {:pulling, _}
     assert_receive {:end, _}

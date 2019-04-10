@@ -13,14 +13,15 @@ defmodule Docker.Client do
 
   defp default_headers, do: %{"Content-Type" => "application/json"}
 
-
   @doc """
   Converts the given params hash and add it to the url.
   """
   def add_query_params(url, params) do
-    filtered_query = params
+    filtered_query =
+      params
       |> Enum.map(fn {p, v} -> {p, Poison.encode!(v)} end)
-      |> URI.encode_query
+      |> URI.encode_query()
+
     "#{url}?#{filtered_query}"
   end
 
@@ -29,7 +30,8 @@ defmodule Docker.Client do
   """
   def get(resource, headers \\ default_headers()) do
     full = base_url() <> resource
-    Logger.debug fn -> "Sending GET request to the Docker HTTP API: #{full}" end
+    Logger.debug(fn -> "Sending GET request to the Docker HTTP API: #{full}" end)
+
     full
     |> HTTPoison.get!(headers, recv_timeout: :infinity)
   end
@@ -38,10 +40,14 @@ defmodule Docker.Client do
   Send a POST request to the Docker API, JSONifying the passed in data.
   """
   def post(resource, data \\ "", headers \\ default_headers()) do
-    Logger.debug fn -> "Sending POST request to the Docker HTTP API: #{resource}, #{inspect data}" end
-    data = Poison.encode! data
-    Logger.debug fn -> "Posting #{inspect(base_url() <> resource)}" end
-    base_url() <> resource
+    Logger.debug(fn ->
+      "Sending POST request to the Docker HTTP API: #{resource}, #{inspect(data)}"
+    end)
+
+    data = Poison.encode!(data)
+    Logger.debug(fn -> "Posting #{inspect(base_url() <> resource)}" end)
+
+    (base_url() <> resource)
     |> HTTPoison.post!(data, headers, recv_timeout: :infinity)
   end
 
@@ -49,19 +55,23 @@ defmodule Docker.Client do
   Send a request with the verb to the Docker API, stream the response.
   """
   def stream(verb, resource, data \\ "", headers \\ default_headers()) do
-    Logger.debug fn -> "Sending #{verb} request to the Docker HTTP API: #{resource}, #{inspect data}" end
-    data = Poison.encode! data
+    Logger.debug(fn ->
+      "Sending #{verb} request to the Docker HTTP API: #{resource}, #{inspect(data)}"
+    end)
+
+    data = Poison.encode!(data)
     url = base_url() <> resource
-    Logger.debug fn -> "Posting #{inspect(url)} #{inspect(headers)}" end
-    HTTPoison.request!(verb, url, data, headers, [recv_timeout: :infinity, stream_to: self()])
+    Logger.debug(fn -> "Posting #{inspect(url)} #{inspect(headers)}" end)
+    HTTPoison.request!(verb, url, data, headers, recv_timeout: :infinity, stream_to: self())
   end
 
   @doc """
   Send a DELETE request to the Docker API.
   """
   def delete(resource, headers \\ default_headers()) do
-    Logger.debug fn -> "Sending DELETE request to the Docker HTTP API: #{resource}" end
-    base_url() <> resource
+    Logger.debug(fn -> "Sending DELETE request to the Docker HTTP API: #{resource}" end)
+
+    (base_url() <> resource)
     |> HTTPoison.delete!(headers)
   end
 end
