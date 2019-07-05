@@ -59,9 +59,22 @@ defmodule Docker.Names do
 
       iex> Docker.Names.split_image("ubuntu")
       {"index.docker.io", "_", "ubuntu"}
+
+      iex> Docker.Names.split_image("quay.io/docker/lang/elixir:1.8-centos7_3-otp22")
+      {"quay.io", "docker/lang", "elixir:1.8-centos7_3-otp22"}
   """
   def split_image([name]), do: {@default_registry, "_", name}
   def split_image([repo, name]), do: {@default_registry, repo, name}
   def split_image([registry, repo, name]), do: {registry, repo, name}
-  def split_image(image), do: image |> String.split("/") |> split_image
+
+  def split_image(splited_image) when is_list(splited_image) do
+    len = length(splited_image)
+    registry = List.first(splited_image)
+    repo = splited_image |> List.delete_at(0) |> List.delete_at(len - 2) |> Enum.join("/")
+    name = List.last(splited_image)
+
+    split_image([registry, repo, name])
+  end
+
+  def split_image(image) when is_binary(image), do: image |> String.split("/") |> split_image
 end
