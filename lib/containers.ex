@@ -199,6 +199,67 @@ defmodule Docker.Containers do
     |> decode_start_response
   end
 
+  @default_log_opts [:stdout, :stderr]
+
+  @doc """
+  Return real-time logs from server as a stream.
+  """
+  def stream_logs(id, opts \\ []) do
+    query_opts = Enum.filter(opts, fn {key, _} -> key in @default_log_opts end)
+
+    query = [follow: true, since: 0] |> Keyword.merge(query_opts) |> URI.encode_query()
+
+    url = "/containers/#{id}/logs?#{query}"
+
+    Stream.resource(
+      fn -> start_streamming_logs(url) end,
+      fn {id, status, body_or_stream} -> receive_logs({id, status, body_or_stream}) end,
+      fn id -> stop_streaming_logs(id) end
+    )
+  end
+
+  def start_streamming_logs(url) do
+    %HTTPoison.AsyncResponse{id: id} = Docker.Client.stream(:get, url, "", %{})
+    {id, :keepalive, nil}
+  end
+
+  defp receive_logs({id, :kill, _}) do
+    {:halt, id}
+  end
+
+  defp receive_logs({id, :keepalive, body_or_stream}) do
+    receive do
+      %HTTPoison.AsyncStatus{id: ^id, code: code} ->
+        case code do
+          101 -> {[{:ok, "Logs returned as a stream"}], {id, :keepalive, :stream}}
+          200 -> {[{:ok, "Logs returned as a string in response body"}], {id, :keepalive, :body}}
+          404 -> {[{:error, "No such task"}], {id, :kill, body_or_stream}}
+          500 -> {[{:error, "Server error"}], {id, :kill, body_or_stream}}
+          _ -> {[{:error, "Unknow error"}], {id, :kill, body_or_stream}}
+        end
+
+      %HTTPoison.AsyncHeaders{id: ^id, headers: _headers} ->
+        {[], {id, :keepalive, body_or_stream}}
+
+      %HTTPoison.AsyncChunk{id: ^id, chunk: chunk} ->
+        case body_or_stream do
+          :stream ->
+            log = Docker.Misc.parse_stream_log(chunk)
+
+            {[{:log, log}], {id, :keepalive, :stream}}
+          :body ->
+            {[{:log, chunk}], {id, :keepalive, :body}}
+        end
+
+      %HTTPoison.AsyncEnd{id: ^id} ->
+        {[{:end, "Finished streaming"}], {id, :kill, body_or_stream}}
+    end
+  end
+
+  defp stop_streaming_logs(id) do
+    :hackney.stop_async(id)
+  end
+
   @doc """
   Given the name of a container, returns any matching IDs.
   """

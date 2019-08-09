@@ -125,4 +125,20 @@ defmodule Docker.Misc do
   defp stop_streaming_events(id) do
     :hackney.stop_async(id)
   end
+
+  def parse_stream_log(<<header::bytes-size(8), payload::bitstring>>) do
+    {_, s} = stream_header(header)
+    binary_part(payload, 0, s)
+  end
+
+  defp stream_header(
+         <<stream_type::bytes-size(1), 0, 0, 0,
+           payload_size::integer-big-unsigned-unit(32)-size(1)>>
+       ) do
+    {stream_type(stream_type), payload_size}
+  end
+
+  defp stream_type(<<0>>), do: "stdin"
+  defp stream_type(<<1>>), do: "stdout"
+  defp stream_type(<<2>>), do: "stderr"
 end
