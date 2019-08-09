@@ -3,15 +3,16 @@ defmodule ContainersTest do
 
   @test_image "busybox"
   @test_image_tag "latest"
-  @test_conf %{"AttachStdin" => false,
-      "Env" => [],
-      "Image" => "#{@test_image}:#{@test_image_tag}",
-      "Volumes" => %{},
-      "ExposedPorts" => %{},
-    }
+  @test_conf %{
+    "AttachStdin" => false,
+    "Env" => [],
+    "Image" => "#{@test_image}:#{@test_image_tag}",
+    "Volumes" => %{},
+    "ExposedPorts" => %{}
+  }
 
   setup_all do
-    IO.puts "Pulling #{@test_image}:#{@test_image_tag} for testing..."
+    IO.puts("Pulling #{@test_image}:#{@test_image_tag} for testing...")
     Docker.Images.pull(@test_image, @test_image_tag)
     :ok
   end
@@ -39,12 +40,14 @@ defmodule ContainersTest do
   end
 
   test "start and stop" do
-    conf = %{"AttachStdin" => false,
+    conf = %{
+      "AttachStdin" => false,
       "Env" => [],
       "Image" => "redis:latest",
       "Volumes" => %{},
-      "ExposedPorts" => %{},
+      "ExposedPorts" => %{}
     }
+
     Docker.Images.pull("redis", "latest")
     assert {:ok, %{"Id" => id}} = Docker.Containers.create(conf)
     assert {:ok} = Docker.Containers.start(id)
@@ -53,12 +56,14 @@ defmodule ContainersTest do
   end
 
   test "start and kill" do
-    conf = %{"AttachStdin" => false,
+    conf = %{
+      "AttachStdin" => false,
       "Env" => [],
       "Image" => "redis:latest",
       "Volumes" => %{},
-      "ExposedPorts" => %{},
+      "ExposedPorts" => %{}
     }
+
     Docker.Images.pull("redis", "latest")
     assert {:ok, %{"Id" => id}} = Docker.Containers.create(conf)
     assert {:ok} = Docker.Containers.start(id)
@@ -66,14 +71,15 @@ defmodule ContainersTest do
     assert {:ok} = Docker.Containers.remove(id)
   end
 
-
   test "restart" do
-    conf = %{"AttachStdin" => false,
+    conf = %{
+      "AttachStdin" => false,
       "Env" => [],
       "Image" => "redis:latest",
       "Volumes" => %{},
-      "ExposedPorts" => %{},
+      "ExposedPorts" => %{}
     }
+
     Docker.Images.pull("redis", "latest")
     assert {:ok, %{"Id" => id}} = Docker.Containers.create(conf)
     assert {:ok} = Docker.Containers.start(id)
