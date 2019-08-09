@@ -59,10 +59,10 @@ defmodule Docker.Client do
       "Sending #{verb} request to the Docker HTTP API: #{resource}, #{inspect(data)}"
     end)
 
-    data = Poison.encode!(data)
+    # data = Poison.encode!(data)
     url = base_url() <> resource
     Logger.debug(fn -> "Posting #{inspect(url)} #{inspect(headers)}" end)
-    HTTPoison.request!(verb, url, data, headers, recv_timeout: :infinity, stream_to: self())
+    HTTPoison.request!(verb, url, data, %{}, recv_timeout: :infinity, stream_to: self())
   end
 
   @doc """
